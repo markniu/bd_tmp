@@ -830,7 +830,7 @@ class BDsensorEndstopWrapper:
         data = int(data)
         if cmd == CMD_READ_DATA: #read data
             pr = self.I2C_BD_send_cmd.send([self.oid, cmd, data])
-            self.gcode.respond_info(f"{pr}")
+            #self.gcode.respond_info(f"{pr}")
             return int(pr['r'])
         else:
             return self.I2C_BD_send_cmd.send([self.oid, cmd, data])
