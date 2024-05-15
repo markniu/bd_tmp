@@ -890,7 +890,7 @@ class BDsensorEndstopWrapper:
 
     def bd_set_aj_len(self, hgt):
         hgt=hgt*1000 
-        self.I2C_BD_send([self.oid, 1026, hgt])
+        self.I2C_BD_send(1026, hgt)
 
     def event_motor_off(self,print_time):
         if self.adjust_range != 0:
@@ -909,6 +909,7 @@ class BDsensorEndstopWrapper:
                     self.bd_set_aj_len(z)
                     #self.gcode.respond_info("current z:%f" % z)
                     break
+            self.I2C_BD_send(CMD_DISTANCE_MODE)
         return eventtime + BD_TIMER
     def cmd_M102(self, gcmd, wait=False):
         # self.gcode_que=gcmd

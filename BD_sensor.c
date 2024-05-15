@@ -354,7 +354,6 @@ static uint_fast8_t bd_event(struct timer *t)
 	else //if(CONFIG_CLOCK_FREQ>60000000)
 		timer_ilde= timer_from_us(19000);
 
-	
      if(diff_step){
 		adjust_z_move();
      }
@@ -397,6 +396,13 @@ void timer_bd_init(void)
     bd_tim.time.waketime = timer_read_time()+1000000;
     bd_tim.time.func = bd_event;
     sched_add_timer(&bd_tim.time);
+	//output("timer_bd_init mcuoid=%c", oid_g);
+}
+
+void timer_bd_uinit(void)
+{
+    sched_del_timer(&bd_tim.time);
+	//output("timer_bd_uinit mcuoid=%c", oid_g);
 }
 
 void adust_Z_calc(uint16_t sensor_z,struct stepper *s)
@@ -416,7 +422,7 @@ void adust_Z_calc(uint16_t sensor_z,struct stepper *s)
 	}
     int diff_mm = (sensor_z*10 - step_adj[0].cur_z);
     diff_step = diff_mm * step_adj[0].steps_per_mm/1000;
-    //output("Z_Move_L mcuoid=%c diff_step=%c sen_z=%c dir=%c cur_z=%c", oid_g,diff_step>0?diff_step:-diff_step,sensor_z,dir,step_adj[0].cur_z);
+    //output("Z_Move_L mcuoid=%c diff_step=%c sen_z=%c cur_z=%c", oid_g,diff_step>0?diff_step:-diff_step,sensor_z,step_adj[0].cur_z);
 	////////////////////////
 	return;
 
@@ -432,6 +438,10 @@ cmd_RT_Live(uint32_t *args)
     else if(cmd==CMD_CUR_Z){ //1026 CMD_CUR_Z
         step_adj[0].cur_z=dat;
 		diff_step = 0;
+	    if (step_adj[0].adj_z_range<100||step_adj[0].cur_z>3000||step_adj[0].cur_z<100)
+			timer_bd_uinit();
+	    else if(step_adj[0].cur_z<=step_adj[z_index].adj_z_range)
+	        timer_bd_init();
     }
     else if(cmd==CMD_ADJ_Z) //1027  CMD_ADJ_Z
         step_adj[z_index].adj_z_range=dat;
@@ -450,7 +460,8 @@ void
 command_I2C_BD_send(uint32_t *args)
 {
     unsigned int cmd_c=args[1];
-    output("command_I2C_BD_send mcuoid=%c cmd=%c dat=%c", args[0],cmd_c,args[2]);
+	oid_g=args[0];
+    //output("command_I2C_BD_send mcuoid=%c cmd=%c dat=%c", args[0],cmd_c,args[2]);
 	//only read data
 	if(cmd_c==CMD_READ_DATA){
         uint8_t oid = args[0];
