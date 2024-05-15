@@ -1010,10 +1010,10 @@ class BDsensorEndstopWrapper:
         ncount = 0
         while 1:
             z_pos += 0.1
-            self.I2C_BD_send(str(ncount))
-            self.I2C_BD_send(str(ncount))
-            self.I2C_BD_send(str(ncount))
-            self.I2C_BD_send(str(ncount))
+            self.I2C_BD_send((ncount))
+            self.I2C_BD_send((ncount))
+            self.I2C_BD_send((ncount))
+            self.I2C_BD_send((ncount))
             self.toolhead.dwell(0.2)
             # self.gcode.run_script_from_command("G91")
             # self.gcode.run_script_from_command("G1 Z+0.1 F1500")
@@ -1242,9 +1242,9 @@ class BDsensorEndstopWrapper:
             sample_count = 2
             if self.homing == 1 and (self.collision_homing == 1
                or self.collision_calibrating == 1):
-                self.I2C_BD_send(str(1))
+                self.I2C_BD_send(1)
             else:
-                self.I2C_BD_send(str(int(self.position_endstop * 100)))
+                self.I2C_BD_send(int(self.position_endstop * 100))
                 #self.gcode.respond_info("home_pos:%s" % str(int(self.position_endstop * 100)))
             # time.sleep(0.01)
         else:
