@@ -589,8 +589,16 @@ command_BDendstop_home(uint32_t *args)
     e.pin_num = args[8];
     e.pin =  gpio_in_setup(args[8], 1);
     sched_add_timer(&e.time);
+	if(args[9]==1)
+	{
+        BD_i2c_write(CMD_SWITCH_MODE);
+		BD_i2c_write(args[10]);
+		sda_gpio_in=gpio_in_setup(sda_pin, 1);
+        BD_setLow(scl_gpio);
+		switch_mode=1;
+	}
 }
 DECL_COMMAND(command_BDendstop_home,
              "BDendstop_home oid=%c clock=%u sample_ticks=%u sample_count=%c"
              " rest_ticks=%u pin_value=%c trsync_oid=%c trigger_reason=%c"
-             " endstop_pin=%c");
+             " endstop_pin=%c sw=%c sw_val=%c");

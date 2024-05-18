@@ -815,14 +815,14 @@ class BDsensorEndstopWrapper:
         self.mcu_endstop.add_config_cmd(
             "BDendstop_home oid=%d clock=0 sample_ticks=0 sample_count=0"
             " rest_ticks=0 pin_value=0 trsync_oid=0 trigger_reason=0"
-            " endstop_pin=%s"
+            " endstop_pin=%s sw=0 sw_val=0"
             % (self.oid_endstop, self.endstop_pin_num), on_restart=True)
         # Lookup commands
 
         self._home_cmd = self.mcu_endstop.lookup_command(
             "BDendstop_home oid=%c clock=%u sample_ticks=%u sample_count=%c"
             " rest_ticks=%u pin_value=%c trsync_oid=%c trigger_reason=%c"
-            " endstop_pin=%c",
+            " endstop_pin=%c sw=%c sw_val=%c",
             cq=cmd_queue
         )
 
@@ -925,7 +925,7 @@ class BDsensorEndstopWrapper:
         if fore_r == 0:
             if self.bd_value >= 10.24:
                 raise self.printer.command_error("Bed Distance Sensor "
-                                                 "data error:%.2f"
+                                                 "data error0:%.2f"
                                                  % self.bd_value)
             elif self.bd_value > 3.8:
                 raise self.printer.command_error("Bed Distance Sensor, "
@@ -934,7 +934,7 @@ class BDsensorEndstopWrapper:
         elif fore_r == 2:
             if self.bd_value >= 10.24:
                 raise self.printer.command_error("Bed Distance Sensor "
-                                                 "data error:%.2f"
+                                                 "data error2:%.2f"
                                                  % self.bd_value)
 
         return self.bd_value + self.z_offset
@@ -1233,19 +1233,20 @@ class BDsensorEndstopWrapper:
 
     def home_start(self, print_time, sample_time, sample_count, rest_time,
                    triggered=True):
-        self.BD_Sensor_Read(2)
+        collision_value = int(self.position_endstop * 100)
         if "V1." not in self.bdversion:
             self.BD_version(self.gcode)
         #self.homing = 1
         if self.switch_mode == 1:
-            self.I2C_BD_send(CMD_SWITCH_MODE)
+            #self.I2C_BD_send(CMD_SWITCH_MODE)
             sample_time = self.switch_mode_sample_time
             sample_count = 2
             if self.homing == 1 and (self.collision_homing == 1
                or self.collision_calibrating == 1):
-                self.I2C_BD_send(1)
-            else:
-                self.I2C_BD_send(int(self.position_endstop * 100))
+                #self.I2C_BD_send(1)
+                collision_value = 1
+            #else:
+           #     self.I2C_BD_send(int(self.position_endstop * 100))
                 #self.gcode.respond_info("home_pos:%s" % str(int(self.position_endstop * 100)))
             # time.sleep(0.01)
         else:
@@ -1282,7 +1283,8 @@ class BDsensorEndstopWrapper:
                 triggered ^ self._invert_endstop,
                 self.etrsync.get_oid(),
                 self.etrsync.REASON_ENDSTOP_HIT,
-                self.endstop_pin_num
+                self.endstop_pin_num,
+                self.switch_mode,collision_value
             ],
             reqclock=clock
         )
@@ -1301,7 +1303,7 @@ class BDsensorEndstopWrapper:
             self.trigger_completion.complete(True)
         self.trigger_completion.wait()
         self._home_cmd.send([self.oid_endstop, 0, 0, 0, 0, 0, 0, 0,
-                            self.endstop_pin_num])
+                            self.endstop_pin_num,0,0])
         ffi_main, ffi_lib = chelper.get_ffi()
         ffi_lib.trdispatch_stop(self._trdispatch)
         res = [trsync.stop() for trsync in self._trsyncs]
@@ -1314,6 +1316,13 @@ class BDsensorEndstopWrapper:
         return home_end_time
 
     def multi_probe_begin(self):
+       # self.BD_Sensor_Read(2)# check the if the BDsensor is working
+        curtime = self.printer.get_reactor().monotonic()
+        self.toolhead = self.printer.lookup_object('toolhead')
+        kin_status = self.toolhead.get_kinematics().get_status(curtime)
+        if 'z' not in kin_status['homed_axes']:
+            self.gcode.respond_info("check bdsensor")
+            self.BD_Sensor_Read(2)# check the if the BDsensor is working
         if self.stow_on_each_sample:
             return
         self.multi = 'FIRST'
@@ -1422,6 +1431,7 @@ class BDsensorEndstopWrapper:
         elif self.homing == 1:
             self.I2C_BD_send(CMD_DISTANCE_MODE)
             time.sleep(0.1)
+            #self.gcode.respond_info("multi_probe_end")
             self.bd_value = self.BD_Sensor_Read(2)
             if self.bd_value > (self.position_endstop + 2):
                 self.gcode.respond_info("triggered at %.3f mm" % self.bd_value)
