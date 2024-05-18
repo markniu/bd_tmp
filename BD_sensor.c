@@ -463,19 +463,19 @@ command_I2C_BD_send(uint32_t *args)
 	oid_g=args[0];
     //output("command_I2C_BD_send mcuoid=%c cmd=%c dat=%c", args[0],cmd_c,args[2]);
 	//only read data
-	if(cmd_c==CMD_READ_DATA){
+	if(cmd_c==CMD_READ_DATA && args[2]==1){
         uint8_t oid = args[0];
         BD_Data=BD_i2c_read();
         sendf("I2CBDr oid=%c r=%c", oid,BD_Data);
 	}
-	else if(cmd_c<=1030){
+	else if(cmd_c<=1030&& args[2]==0){
         BD_read_flag=cmd_c;
         BD_i2c_write(cmd_c);
         if (cmd_c==CMD_SWITCH_MODE)
             switch_mode=1;
         else if(cmd_c>CMD_READ_DATA){
             switch_mode=0;
-            if(cmd_c>=1025 && cmd_c<=1030){
+            if(cmd_c>=1025 && cmd_c<=1030 ){
                 cmd_RT_Live(args);
             }
         }
