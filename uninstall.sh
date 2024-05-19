@@ -18,6 +18,7 @@ echo "delete BDsensor.py and BD_sensor.c from klipper"
 
 rm "${HOME_DIR}/klippy/extras/BDsensor.py"
 rm "${HOME_DIR}/src/BD_sensor.c"
+rm "${HOME_DIR}/make_with_bdsensor.sh"
 
 sed -i '/src-y += BD_sensor.c/d' "${HOME_DIR}/src/Makefile"
 
