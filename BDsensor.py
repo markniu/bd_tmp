@@ -270,7 +270,7 @@ class BDPrinterProbe:
                          and self.mcu_probe.QGL_Tilt_Probe == 0))):
                     # pos = self._probe(speed)
                     toolhead.wait_moves()
-                    time.sleep(0.004)
+                    time.sleep(0.1)
                     pos = toolhead.get_position()
                     intd = self.mcu_probe.BD_Sensor_Read(0)
                     pos[2] = pos[2] - intd + self.mcu_probe.endstop_bdsensor_offset
@@ -682,7 +682,8 @@ class BDsensorEndstopWrapper:
         self.collision_calibrate = config.getint('collision_calibrate', 0)
         self.QGL_Tilt_Probe = config.getint('QGL_Tilt_Probe', 1)
         self.switch_mode_sample_time = config.getint('SWITCH_MODE_SAMPLE_TIME', 0.006)
-
+        self.speed = config.getfloat('speed', 3.0, above=0.)
+        
         gcode_macro = self.printer.load_object(config,
                                                'gcode_macro')
         self.activate_gcode = \
@@ -939,7 +940,7 @@ class BDsensorEndstopWrapper:
 
         return self.bd_value + self.z_offset
 
-    def BD_version(self, gcmd):
+    def BD_version(self, gcmd,r_lenght):
         self.I2C_BD_send(CMD_READ_VERSION)  # 1016 // // read sensor version
         self.I2C_BD_send(CMD_READ_VERSION)
         self.toolhead = self.printer.lookup_object('toolhead')
@@ -954,7 +955,7 @@ class BDsensorEndstopWrapper:
             x.append(intd)
             # self.toolhead.dwell(0.1)
             ncount1 = ncount1 + 1
-            if ncount1 >= 20:
+            if ncount1 >= r_lenght:
                 self.I2C_BD_send(CMD_DISTANCE_MODE)
                 res = ''.join(map(chr, x))
                 self.bdversion = res
@@ -966,7 +967,7 @@ class BDsensorEndstopWrapper:
            or "V1.1 " in self.bdversion \
            or "V1.2 " in self.bdversion:
             self.switch_mode = 0
-        if "andapi" in self.bdversion:
+        if "V1." in self.bdversion:
             self.gcode.respond_info("BDsensorVer:%s,switch_mode=%d,"
                                     "collision_homing=%d,collision_cal=%d"
                                     % (self.bdversion, self.switch_mode,
@@ -978,7 +979,7 @@ class BDsensorEndstopWrapper:
 
     def BD_calibrate(self, gcmd):
         if "V1." not in self.bdversion:
-            self.BD_version(self.gcode)
+            self.BD_version(self.gcode,20)
         if self.switch_mode == 1 and self.collision_calibrate == 1:
             self.collision_calibrating = 1
             gcmd.respond_info("Homing")
@@ -1172,7 +1173,7 @@ class BDsensorEndstopWrapper:
         elif cmd_bd == -5:
             self.BD_read_calibration(gcmd)
         elif cmd_bd == -1:
-            self.BD_version(gcmd)
+            self.BD_version(gcmd,20)
         elif cmd_bd == -2:  # gcode M102 S-2 read distance data
             self.bd_distance(gcmd)
         elif cmd_bd == -7:
@@ -1235,7 +1236,7 @@ class BDsensorEndstopWrapper:
                    triggered=True):
         collision_value = int(self.position_endstop * 100)
         if "V1." not in self.bdversion:
-            self.BD_version(self.gcode)
+            self.BD_version(self.gcode,5)
         #self.homing = 1
         if self.switch_mode == 1:
             #self.I2C_BD_send(CMD_SWITCH_MODE)
@@ -1321,7 +1322,7 @@ class BDsensorEndstopWrapper:
         self.toolhead = self.printer.lookup_object('toolhead')
         kin_status = self.toolhead.get_kinematics().get_status(curtime)
         if 'z' not in kin_status['homed_axes']:
-            self.gcode.respond_info("check bdsensor")
+            #self.gcode.respond_info("Check bd sensor")
             self.BD_Sensor_Read(2)# check the if the BDsensor is working
         if self.stow_on_each_sample:
             return
