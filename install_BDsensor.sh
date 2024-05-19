@@ -49,7 +49,7 @@ ln -s "${BDDIR}/make_with_bdsensor.sh" "${HOME_DIR}/make_with_bdsensor.sh"
 if ! grep -q "BD_sensor.c" "${HOME_DIR}/src/Makefile"; then
     echo "src-y += BD_sensor.c  " >> "${HOME_DIR}/src/Makefile"
 fi
-
+chmod +x "${BDDIR}/uninstall.sh"
 chmod +x "${BDDIR}/make_with_bdsensor.sh"
 
 if ! grep -q "klippy/extras/BDsensor.py" "${HOME_DIR}/.git/info/exclude"; then
@@ -65,5 +65,14 @@ fi
 
 
 echo ""
-echo "Install Bed Distance Sensor successful :) "
+echo "Install Bed Distance Sensor successful "
 echo ""
+echo "you can compile the klipper firmware now, for example:"
+echo ""
+echo "cd ~/klipper/"
+echo "make menuconfig"
+echo "./make_with_bdsensor.sh"
+echo ""
+echo "then flash firmware into the mcu that the bdsensor connected"
+echo "please note:here we run ./make_with_bdsensor.sh instead of make to compile "
+echo "happy printing!"
